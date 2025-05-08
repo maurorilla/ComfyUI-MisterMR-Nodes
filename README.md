@@ -18,8 +18,7 @@ Parameters:
 - `border_size`: Thickness of shape border (0-100)
 - `border_color`: Color of the border (hex format)
 - `show_fill`: Enable/disable shape filling
-- `fill_color`: Fill color (hex format)
-- `canvas_width`, `canvas_height`: Canvas dimensions
+- `fill_color`: Fill color (hex format) 
 
 ### AddSingleTextNode
 Adds text to your images with various customization options:
@@ -34,6 +33,23 @@ Parameters:
 - `width`, `height`: Text box dimensions
 - `justification`: Text alignment (left/center/right)
 - `font_size`: Size of the font (8-256)
+- `font_family`: Font to use (defaults to Arial with system fallbacks)
+- `text_color`: Color of the text (hex format)
+
+### ColorNode
+Creates color values for use with other MisterMR nodes:
+- Define colors with RGBA values
+- Use with border_color, fill_color, and text_color parameters
+
+Parameters:
+- `red`: Red component (0-255)
+- `green`: Green component (0-255)
+- `blue`: Blue component (0-255)
+- `alpha`: Transparency (0.0-1.0)
+
+Returns:
+- `color`: Color object for use with other nodes
+- `hex_color`: Hex string representation of the color
 
 ## Installation
 
@@ -61,4 +77,5 @@ git clone https://github.com/maurorilla/ComfyUI-MisterMR-Nodes
 ## Notes
 - The drawing nodes support both RGB and RGBA images
 - Font loading defaults to system Arial font, falls back to default font if unavailable
-- Colors can be specified in hex format (#RRGGBB)
+- Colors can be specified in hex format (#RRGGBB) or using the ColorNode
+- Advanced color features include alpha transparency support
