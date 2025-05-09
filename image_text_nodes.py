@@ -381,3 +381,91 @@ class ColorNode:
         }
         
         return (color_obj, hex_color)
+
+class AddLogoNode:
+    """Node for adding logo images onto other images."""
+    
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "logo": ("IMAGE",),
+                "x": ("INT", {"default": 0, "min": 0, "max": 10000}),
+                "y": ("INT", {"default": 0, "min": 0, "max": 10000}),
+                "width": ("INT", {"default": 100, "min": 1, "max": 10000}),
+                "height": ("INT", {"default": 100, "min": 1, "max": 10000}),
+                "preserve_aspect_ratio": (["yes", "no"],),
+                "opacity": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "add_logo"
+    CATEGORY = "MisterMR/Drawing"
+    
+    def add_logo(self, image, logo, x, y, width, height, preserve_aspect_ratio, opacity):
+        # Convert from tensor to PIL Image
+        if isinstance(image, torch.Tensor):
+            image = image.cpu().numpy()
+            image = Image.fromarray((image[0] * 255).astype(np.uint8))
+        else:
+            image = Image.fromarray((image * 255).astype(np.uint8))
+            
+        if isinstance(logo, torch.Tensor):
+            logo = logo.cpu().numpy()
+            logo = Image.fromarray((logo[0] * 255).astype(np.uint8))
+        else:
+            logo = Image.fromarray((logo * 255).astype(np.uint8))
+        
+        # Create a copy of the image to draw on
+        result_image = image.copy()
+        
+        # Resize the logo
+        original_width, original_height = logo.size
+        new_width, new_height = width, height
+        
+        if preserve_aspect_ratio == "yes":
+            # Calculate the aspect ratio of the original logo
+            aspect_ratio = original_width / original_height
+            
+            # Adjust dimensions to preserve aspect ratio
+            if width / height > aspect_ratio:
+                # Width is too large for the given height
+                new_width = int(height * aspect_ratio)
+            else:
+                # Height is too large for the given width
+                new_height = int(width / aspect_ratio)
+        
+        # Resize the logo
+        resized_logo = logo.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        # If logo doesn't have alpha channel, add one
+        if resized_logo.mode != 'RGBA':
+            resized_logo = resized_logo.convert('RGBA')
+            
+        # Apply opacity if needed
+        if opacity < 1.0:
+            # Create a copy of the logo with modified alpha channel
+            data = np.array(resized_logo)
+            # Apply opacity to the alpha channel (if exists)
+            if data.shape[2] >= 4:
+                data[:, :, 3] = data[:, :, 3] * opacity
+            # Convert back to image
+            resized_logo = Image.fromarray(data)
+        
+        try:
+            # Paste the logo onto the image
+            if resized_logo.mode == 'RGBA':
+                result_image.paste(resized_logo, (x, y), resized_logo)
+            else:
+                result_image.paste(resized_logo, (x, y))
+        except Exception as e:
+            print(f"Error adding logo: {str(e)}")
+            return (image,)
+        
+        # Convert back to tensor
+        result = np.array(result_image).astype(np.float32) / 255.0
+        result = torch.from_numpy(result).unsqueeze(0)
+        
+        return (result,)

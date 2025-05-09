@@ -36,6 +36,20 @@ Parameters:
 - `font_family`: Font to use (defaults to Arial with system fallbacks)
 - `text_color`: Color of the text (hex format)
 
+### AddLogoNode
+Overlays a logo or another image onto your base image:
+- Custom positioning and sizing
+- Option to preserve aspect ratio
+- Adjustable opacity for transparent overlays
+
+Parameters:
+- `image`: Input base image
+- `logo`: Logo image to overlay
+- `x`, `y`: Logo position
+- `width`, `height`: Logo dimensions
+- `preserve_aspect_ratio`: Maintain original logo proportions (yes/no)
+- `opacity`: Transparency of the logo (0.0-1.0)
+
 ### ColorNode
 Creates color values for use with other MisterMR nodes:
 - Define colors with RGBA values
@@ -79,3 +93,4 @@ git clone https://github.com/maurorilla/ComfyUI-MisterMR-Nodes
 - Font loading defaults to system Arial font, falls back to default font if unavailable
 - Colors can be specified in hex format (#RRGGBB) or using the ColorNode
 - Advanced color features include alpha transparency support
+- For logo overlays, transparency is preserved when using PNG images with alpha channels
