@@ -48,12 +48,46 @@ app.registerExtension({
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (nodeData.python_module !== "custom_nodes.prompt_selector_node") return;
     
-    // Override the node's onNodeCreated to set up dynamic max updates
+    // Override the node's onNodeCreated to set up dynamic max updates and set control_after_generate default
     const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = function() {
       if (originalOnNodeCreated) {
         originalOnNodeCreated.call(this);
       }
+      
+      // Set control_after_generate default to "increment" for selected_index widget
+      setTimeout(() => {
+        if (this.widgets) {
+          for (const widget of this.widgets) {
+            if (widget.name === "selected_index") {
+              // Try to find and set the control_after_generate dropdown
+              // ComfyUI stores this in the widget's options or as a separate control
+              if (widget.options) {
+                // Check if there's a control_after_generate option
+                if (widget.options.control_after_generate !== undefined) {
+                  widget.options.control_after_generate = "increment";
+                }
+              }
+              // Try accessing the control directly if it exists
+              if (widget.controlAfterGenerate !== undefined) {
+                widget.controlAfterGenerate = "increment";
+              }
+              // Look for the control element in the DOM
+              const widgetElement = widget.computeSize ? this : null;
+              if (widgetElement) {
+                // Try to find the control dropdown and set its value
+                const controlSelector = `[data-widget-name="${widget.name}"] .control-after-generate select, [data-widget-name="${widget.name}"] select.control-after-generate`;
+                const controlElement = document.querySelector(controlSelector);
+                if (controlElement && controlElement.value !== "increment") {
+                  controlElement.value = "increment";
+                  controlElement.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+              }
+              break;
+            }
+          }
+        }
+      }, 50);
       
       // Update max when node is created
       setTimeout(() => {
@@ -98,6 +132,34 @@ app.registerExtension({
       }
       
       if (node.type === "PromptSelector") {
+        // Set control_after_generate default to "increment" for selected_index widget
+        setTimeout(() => {
+          if (node.widgets) {
+            for (const widget of node.widgets) {
+              if (widget.name === "selected_index") {
+                // Try to find and set the control_after_generate dropdown
+                if (widget.options && widget.options.control_after_generate !== undefined) {
+                  widget.options.control_after_generate = "increment";
+                }
+                // Try accessing the control directly
+                if (widget.controlAfterGenerate !== undefined) {
+                  widget.controlAfterGenerate = "increment";
+                }
+                // Look for the control element in the DOM and set it
+                const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
+                if (nodeElement) {
+                  const controlSelect = nodeElement.querySelector(`[data-widget-name="${widget.name}"] select, .control-after-generate select`);
+                  if (controlSelect && controlSelect.value !== "increment") {
+                    controlSelect.value = "increment";
+                    controlSelect.dispatchEvent(new Event("change", { bubbles: true }));
+                  }
+                }
+                break;
+              }
+            }
+          }
+        }, 50);
+        
         // Update max when node is added
         setTimeout(() => {
           const extension = app.extensions?.PromptSelectorUI;
