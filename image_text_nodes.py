@@ -469,3 +469,4 @@ class AddLogoNode:
         result = torch.from_numpy(result).unsqueeze(0)
         
         return (result,)
+

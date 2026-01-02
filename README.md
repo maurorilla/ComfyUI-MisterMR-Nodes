@@ -1,6 +1,6 @@
 # ComfyUI-MisterMR-Nodes
 
-A collection of custom nodes for ComfyUI that add drawing capabilities to your workflow.
+A collection of custom nodes for ComfyUI that add drawing capabilities and prompt manipulation features to your workflow.
 
 ## Features
 
@@ -65,6 +65,29 @@ Returns:
 - `color`: Color object for use with other nodes
 - `hex_color`: Hex string representation of the color
 
+### PromptSelectorNode
+Dynamically replaces placeholder words in prompts with words from a predefined list:
+- Auto-increment mode for automatic cycling through words
+- Manual index selection mode
+- Real-time UI updates showing current selection
+- Supports manual override even when auto-increment is enabled
+
+Parameters:
+- `prompt`: The main prompt text containing a placeholder word (multiline)
+- `word_to_replace`: The placeholder word to be replaced (e.g., "REPLACE_WORD")
+- `replacement_words`: List of replacement words, one per line (multiline)
+- `auto_increment`: Enable/disable automatic cycling through words (default: enabled)
+- `selected_index`: Index of the word to use (0-based, default: 0)
+
+Returns:
+- `prompt`: The prompt with the placeholder replaced by the selected word
+
+**Features:**
+- When auto-increment is enabled, the node automatically cycles through words on each execution
+- Manual changes to `selected_index` are respected and reset the auto-increment sequence
+- The UI displays the current selected word and updates in real-time
+- Control after generate: Automatically increments the index after generation
+
 ## Installation
 
 1. Clone this repository into your ComfyUI custom_nodes folder:
@@ -83,14 +106,32 @@ git clone https://github.com/maurorilla/ComfyUI-MisterMR-Nodes
 
 ## Usage
 
-1. In ComfyUI, you'll find the nodes under the "MisterMR/Drawing" category
-2. Connect an image input to either node
+### Drawing Nodes
+1. In ComfyUI, you'll find the drawing nodes under the "MisterMR/Drawing" category
+2. Connect an image input to the node
 3. Configure the parameters as needed
 4. The nodes will return the modified image that can be used in further processing
 
+### Text/Prompt Nodes
+1. Find the text manipulation nodes under the "MisterMR/Text" category
+2. **PromptSelectorNode**: 
+   - Enter your prompt with a placeholder word (e.g., "A beautiful REPLACE_WORD sunset")
+   - Set `word_to_replace` to match your placeholder (e.g., "REPLACE_WORD")
+   - Add replacement words, one per line (e.g., "red", "blue", "green")
+   - Enable auto-increment for automatic cycling, or manually select an index
+
 ## Notes
+
+### Drawing Nodes
 - The drawing nodes support both RGB and RGBA images
 - Font loading defaults to system Arial font, falls back to default font if unavailable
 - Colors can be specified in hex format (#RRGGBB) or using the ColorNode
 - Advanced color features include alpha transparency support
 - For logo overlays, transparency is preserved when using PNG images with alpha channels
+
+### Text/Prompt Nodes
+- **PromptSelectorNode**: 
+  - Manual changes to `selected_index` are immediately respected, even when auto-increment is enabled
+  - The node maintains state per instance, so multiple nodes can have independent word lists
+  - Empty lines in `replacement_words` are automatically filtered out
+  - The `selected_index` automatically adjusts its maximum based on the number of replacement words
