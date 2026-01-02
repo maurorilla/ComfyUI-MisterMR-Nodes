@@ -81,6 +81,7 @@ Parameters:
 
 Returns:
 - `prompt`: The prompt with the placeholder replaced by the selected word
+- `selected_word`: The currently selected replacement word
 
 **Features:**
 - When auto-increment is enabled, the node automatically cycles through words on each execution
@@ -119,6 +120,8 @@ git clone https://github.com/maurorilla/ComfyUI-MisterMR-Nodes
    - Set `word_to_replace` to match your placeholder (e.g., "REPLACE_WORD")
    - Add replacement words, one per line (e.g., "red", "blue", "green")
    - Enable auto-increment for automatic cycling, or manually select an index
+   - Connect the `prompt` output to your text input nodes
+   - Connect the `selected_word` output to other nodes that need the current selected word
 
 ## Notes
 

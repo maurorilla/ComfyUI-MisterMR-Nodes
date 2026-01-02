@@ -36,8 +36,8 @@ class PromptSelectorNode:
             }
         }
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("prompt",)
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("prompt", "selected_word")
     FUNCTION = "replace_word"
     CATEGORY = "MisterMR/Text"
 
@@ -91,7 +91,7 @@ class PromptSelectorNode:
             print(f"[PromptSelector] Words updated, reset to 0")
 
         if not state['words']:
-            return (prompt,)
+            return (prompt, "")
 
         # Clamp selected_index to valid range
         clamped_selected_index = min(selected_index, len(state['words']) - 1) if selected_index >= 0 else 0
@@ -155,4 +155,4 @@ class PromptSelectorNode:
             print(f"[PromptSelector] Error sending message: {e}")
 
         print(f"[PromptSelector] === EXECUTION END ===")
-        return (output_prompt,)
+        return (output_prompt, replacement_word)
