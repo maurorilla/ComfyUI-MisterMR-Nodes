@@ -6,6 +6,88 @@ console.log("[PromptSelector] Extension file loaded!");
 app.registerExtension({
   name: "PromptSelectorUI",
 
+  // Function to count words in replacement_words text
+  countWords(text) {
+    if (!text) return 0;
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
+    return lines.length;
+  },
+
+  // Function to update word count display using ComfyUI widget system
+  updateWordCountDisplay(node) {
+    if (!node || !node.widgets) return;
+    
+    let replacementWordsWidget = null;
+    let lineCountWidget = null;
+    
+    // Find widgets
+    for (const widget of node.widgets) {
+      if (widget.name === "replacement_words") {
+        replacementWordsWidget = widget;
+      } else if (widget.name === "line_count") {
+        lineCountWidget = widget;
+      }
+    }
+    
+    if (!replacementWordsWidget) {
+      console.log("[PromptSelector] replacement_words widget not found");
+      return;
+    }
+    
+    const count = this.countWords(replacementWordsWidget.value || "");
+    const displayText = `max lines: ${count}`;
+    
+    // Create line count widget if it doesn't exist
+    if (!lineCountWidget) {
+      // Find the index of replacement_words widget
+      const replacementIndex = node.widgets.findIndex(w => w.name === "replacement_words");
+      
+      // Create a simple text display widget
+      lineCountWidget = node.addWidget("text", "line_count", displayText, () => {}, {
+        serialize: false  // Don't save this widget's value
+      });
+      
+      // Move the widget to be after replacement_words
+      if (replacementIndex >= 0 && node.widgets.length > 1) {
+        // Remove from current position
+        const widgetIndex = node.widgets.indexOf(lineCountWidget);
+        if (widgetIndex > -1) {
+          node.widgets.splice(widgetIndex, 1);
+          // Insert after replacement_words
+          node.widgets.splice(replacementIndex + 1, 0, lineCountWidget);
+        }
+      }
+      
+      // Make widget read-only by overriding its draw method
+      const originalDraw = lineCountWidget.draw;
+      lineCountWidget.draw = function(ctx, node, widget_width, y, H) {
+        // Draw as simple text label
+        ctx.save();
+        ctx.fillStyle = "#aaa";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(this.value, 15, y + H * 0.7);
+        ctx.restore();
+      };
+      
+      // Override computeSize to give it height
+      lineCountWidget.computeSize = function() {
+        return [0, 20];
+      };
+      
+      console.log("[PromptSelector] Created line count widget");
+    }
+    
+    // Update the display value
+    if (lineCountWidget) {
+      lineCountWidget.value = displayText;
+      // Force redraw
+      app.graph.setDirtyCanvas(true, true);
+    }
+    
+    console.log(`[PromptSelector] Updated line count: ${displayText}`);
+  },
+
   // Function to update max value for selected_index based on replacement_words
   updateSelectedIndexMax(node) {
     if (!node || !node.widgets) return;
@@ -43,6 +125,9 @@ app.registerExtension({
       
       console.log(`[PromptSelector] Updated max for selected_index to ${maxValue} (${lines.length} words)`);
     }
+    
+    // Also update word count display
+    this.updateWordCountDisplay(node);
   },
 
   async beforeRegisterNodeDef(nodeType, nodeData) {
@@ -89,11 +174,16 @@ app.registerExtension({
         }
       }, 50);
       
-      // Update max when node is created
+      // Update max and line count when node is created
       setTimeout(() => {
         const extension = app.extensions?.PromptSelectorUI;
-        if (extension && extension.updateSelectedIndexMax) {
-          extension.updateSelectedIndexMax(this);
+        if (extension) {
+          if (extension.updateSelectedIndexMax) {
+            extension.updateSelectedIndexMax(this);
+          }
+          if (extension.updateWordCountDisplay) {
+            extension.updateWordCountDisplay(this);
+          }
         }
       }, 100);
     };
@@ -107,15 +197,18 @@ app.registerExtension({
     // Store extension reference for access from other methods
     if (!app.extensions) app.extensions = {};
     app.extensions.PromptSelectorUI = {
-      updateSelectedIndexMax: self.updateSelectedIndexMax.bind(self)
+      updateSelectedIndexMax: self.updateSelectedIndexMax.bind(self),
+      updateWordCountDisplay: self.updateWordCountDisplay.bind(self),
+      countWords: self.countWords.bind(self)
     };
     
-    // Update max for all existing PromptSelector nodes when graph loads
+    // Update max and word count for all existing PromptSelector nodes when graph loads
     const updateAllNodes = () => {
       if (app.graph && app.graph._nodes) {
         for (const node of app.graph._nodes) {
           if (node.type === "PromptSelector") {
             self.updateSelectedIndexMax(node);
+            self.updateWordCountDisplay(node);
           }
         }
       }
@@ -160,11 +253,16 @@ app.registerExtension({
           }
         }, 50);
         
-        // Update max when node is added
+        // Update max and line count when node is added
         setTimeout(() => {
           const extension = app.extensions?.PromptSelectorUI;
-          if (extension && extension.updateSelectedIndexMax) {
-            extension.updateSelectedIndexMax(node);
+          if (extension) {
+            if (extension.updateSelectedIndexMax) {
+              extension.updateSelectedIndexMax(node);
+            }
+            if (extension.updateWordCountDisplay) {
+              extension.updateWordCountDisplay(node);
+            }
           }
         }, 100);
         
@@ -177,13 +275,16 @@ app.registerExtension({
                 if (originalCallback) {
                   originalCallback(value);
                 }
-                // Update max when replacement_words changes
-                setTimeout(() => {
-                  const extension = app.extensions?.PromptSelectorUI;
-                  if (extension && extension.updateSelectedIndexMax) {
+                // Update max and line count when replacement_words changes
+                const extension = app.extensions?.PromptSelectorUI;
+                if (extension) {
+                  if (extension.updateSelectedIndexMax) {
                     extension.updateSelectedIndexMax(node);
                   }
-                }, 10);
+                  if (extension.updateWordCountDisplay) {
+                    extension.updateWordCountDisplay(node);
+                  }
+                }
               };
             }
           }
@@ -203,9 +304,9 @@ app.registerExtension({
         return;
       }
       
-      // Find the specific node by ID
+      // Find the specific node by ID (handle both string and number types)
       if (app.graph && app.graph._nodes) {
-        const node = app.graph._nodes.find(n => n.id === nodeId);
+        const node = app.graph._nodes.find(n => String(n.id) === String(nodeId));
         
         if (node) {
           console.log("[PromptSelector] Found node by ID:", nodeId);
